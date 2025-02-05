@@ -1,3 +1,8 @@
+mod transformer;
+
+use transformer::decoder::*;
+use transformer::encoder::*;
+
 use burn::nn;
 use burn::module::Module;
 use burn::tensor::backend::Backend;
