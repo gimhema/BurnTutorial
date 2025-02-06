@@ -20,7 +20,7 @@ impl<B: Backend> Encoder<B> {
         // Transformer 인코더 구성 설정
         // let config = TransformerEncoderConfig::new(4, 8, 64, 4) // (레이어 개수, 헤드 수, 임베딩 차원)
         //     .with_dropout(0.1);
-        let config = TransformerEncoderConfig::new(4, 8, 64, 256).with_dropout(0.1);
+        let config = TransformerEncoderConfig::new(64, 8, 4, 256).with_dropout(0.1);
 
         // Transformer 인코더 생성
         let encoder = config.init::<B>(&device);
@@ -31,6 +31,8 @@ impl<B: Backend> Encoder<B> {
     pub fn encode(&self) {
         // 임의의 입력 텐서 생성 (배치 크기 2, 토큰 개수 5, 차원 64)
         let input_tensor = Tensor::<B, 3>::random(Shape::new([2, 5, 64]), Distribution::Uniform(0.0, 1.0), &self.device);
+
+        println!("Input Tensor Shape: {:?}", input_tensor.shape());
 
         // Transformer 인코더 입력 객체 생성
         let encoder_input = TransformerEncoderInput::new(input_tensor);
