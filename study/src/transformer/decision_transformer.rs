@@ -55,33 +55,38 @@ impl<B: Backend> DecisionTransformer<B> {
         &self,
         states: Tensor<B, 3>,
         actions: Tensor<B, 3>,
-        rewards: Tensor<B, 3>,
+        rewards: Tensor<B, 3>,  // unused variable 경고를 피하기 위해 _rewards로 변경 가능
         returns_to_go: Tensor<B, 3>,
         timesteps: Tensor<B, 2, burn::tensor::Int>
     ) -> Tensor<B, 2> {
-        let mut states = states.reshape([1, states.dims()[0], states.dims()[2]]);
-        let mut actions = actions.reshape([1, actions.dims()[0], actions.dims()[2]]);
-        let mut returns_to_go = returns_to_go.reshape([1, returns_to_go.dims()[0], 1]);
-        let mut timesteps = timesteps.reshape([1, timesteps.dims()[0]]);
-        
+        let mut states = states.clone().reshape([1, states.dims()[0], states.dims()[2]]);
+        let mut actions = actions.clone().reshape([1, actions.dims()[0], actions.dims()[2]]);
+        let mut returns_to_go = returns_to_go.clone().reshape([1, returns_to_go.dims()[0], 1]);
+        let mut timesteps = timesteps.clone().reshape([1, timesteps.dims()[0]]);
+    
         let attention_mask = if let Some(max_length) = self.max_length {
             let seq_len = states.dims()[1];
             let start_idx = seq_len.saturating_sub(max_length);
-            
+    
             states = states.narrow(1, start_idx, max_length);
             actions = actions.narrow(1, start_idx, max_length);
             returns_to_go = returns_to_go.narrow(1, start_idx, max_length);
             timesteps = timesteps.narrow(1, start_idx, max_length);
-
+    
+            // mask는 clone()을 사용하여 소유권 문제를 해결
             let mut mask = Tensor::zeros([1, max_length], &states.device());
-            let _range: std::ops::Range<usize> = 0..10;
-            // mask.slice_assign([0, max_length.saturating_sub(seq_len)..max_length], Tensor::ones([1, seq_len.saturating_sub(start_idx)], &states.device()));
-            // Some(mask)
+
+            Some( mask.slice_assign([max_length.saturating_sub(seq_len)..max_length], Tensor::ones([1, seq_len.saturating_sub(start_idx)], &states.device())) )  
         } else {
             None
         };
-        
+    
         let (_, action_preds, _) = self.forward(states, actions, returns_to_go, timesteps, attention_mask);
-        action_preds.narrow(1, action_preds.dims()[1] - 1, 1).squeeze(1)
+    
+        // action_preds도 clone()을 통해 복사하여 사용
+        action_preds.clone().narrow(1, action_preds.dims()[1] - 1, 1).squeeze(1)
     }
+    
+    
+    
 }
